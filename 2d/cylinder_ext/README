@@ -1,0 +1,5 @@
+Use makefile to generate gmsh grid and convert to xml format.
+
+Then run solver
+
+  $ python ns_picard.py

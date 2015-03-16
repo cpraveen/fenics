@@ -1,0 +1,10 @@
+Use makefile to generate gmsh grid and convert to xml format.
+
+Then run solver, e.g.,
+
+  $ python ns.py
+
+There are two solvers:
+
+ns.py: extrapolation of velocity in convection term. You have to use small cfl.
+ns_picard.py: Does some picard iterations. Allows larger cfl

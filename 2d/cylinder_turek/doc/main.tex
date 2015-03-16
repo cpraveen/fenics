@@ -1,0 +1,65 @@
+\documentclass[12pt, oneside]{article}   	% use "amsart" instead of "article" for AMSLaTeX format
+\usepackage{geometry}                		% See geometry.pdf to learn the layout options. There are lots.
+\geometry{a4paper}                   		% ... or a4paper or a5paper or ... 
+%\geometry{landscape}                		% Activate for for rotated page geometry
+%\usepackage[parfill]{parskip}    		% Activate to begin paragraphs with an empty line rather than an indent
+\usepackage{graphicx}				% Use pdf, png, jpg, or eps§ with pdflatex; use eps in DVI mode
+								% TeX will automatically convert eps --> pdf in pdflatex		
+\usepackage{amssymb}
+\usepackage{bm}
+
+\newcommand{\vel}{\bm{u}}
+
+\title{Solution of Navier-Stokes equations}
+\author{Praveen C}
+%\date{}							% Activate to display a given date or no date
+
+\begin{document}
+\maketitle
+
+%-----------------------------------------------------------------------------------
+\section{Navier-Stokes equations}
+
+\begin{eqnarray*}
+\vel_t + \vel \cdot \nabla\vel + \nabla p &=& \nu \Delta\vel \\
+\nabla\cdot\vel &=& 0
+\end{eqnarray*}
+
+\section{Numerical scheme}
+We use Taylor-Hood elements $(P_2-P_1)$ and BDF2 time discretization
+\[
+D_t \vel^n = \frac{ \frac{3}{2}\vel^n - \frac{1}{2}\vel^{n-1} + 2 \vel^{n-2}}{\Delta t}
+\]
+For first time step use backward Euler scheme. The equations are solved in coupled manner.
+%-----------------------------------------------------------------------------------
+\subsection{Semi-implicit scheme I}
+Find $\vel^n, p^n$ such that
+\begin{eqnarray*}
+\tilde{\vel}^n &=& 2 \vel^{n-1} - \vel^{n-2}, \qquad n=2,3,\ldots \\
+D_t \vel^n + \tilde{\vel}^n \cdot \nabla \tilde{\vel}^n + \nabla p^n &=& \nu \Delta\vel^n \\
+\nabla\cdot\vel^n &=& 0
+\end{eqnarray*}
+
+\begin{itemize}
+\item Linear scheme
+\item Solve with direct solver
+\item LU decomposition can be re-used
+\item Need to satisfy CFL condition
+\end{itemize}
+%-----------------------------------------------------------------------------------
+\subsection{Semi-implicit scheme II}
+Find $\vel^n, p^n$ such that
+\begin{eqnarray*}
+\tilde{\vel}^n &=& 2 \vel^{n-1} - \vel^{n-2} \\
+D_t \vel^n + \tilde{\vel}^n \cdot \nabla \vel^n + \nabla p^n &=& \nu \Delta\vel^n \\
+\nabla\cdot\vel^n &=& 0
+\end{eqnarray*}
+
+\begin{itemize}
+\item Linear scheme
+\item Matrices not constant with time, LU decomposition has to be recomputed, not efficient
+\item Use an iterative solver (see Elman, Silvester, Walther)
+\item No CFL restriction ???
+\end{itemize}
+
+\end{document}  

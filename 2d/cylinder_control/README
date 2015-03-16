@@ -1,0 +1,21 @@
+Cylinder in unbounded domain
+
+* Create grid by running makefile
+
+   $ make
+
+* Compute unsteady solution
+
+   $ python ns_picard.py
+ 
+* Compute stationary solution
+
+   $ python steady.py
+
+Open u.pvd file in paraview or u#.vtu files in visit. The last solution will be also saved in steady.xml file.
+
+* Compute eigenvalues. There are two codes, one using slepc and another using scipy.
+
+   $ python eig_slepc.py
+
+Open eig.pvd file in paraview or the eig#.vtu files in visit.

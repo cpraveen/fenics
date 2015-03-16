@@ -1,0 +1,28 @@
+Cylinder in channel
+
+* Generate grid
+
+   $ make
+
+* Compute stationary solution by specifying Reynolds number
+
+   $ python demo_steady.py 150
+
+* Compute eiganvalues/vectors by specifying Reynolds number
+
+   $ python eig_scipy.py 150
+
+* Plot eigenvalues
+
+   $ gnuplot eig.gnu
+   $ xpdf eig.pdf
+
+* Visualize eigenfunctions of velocity: open eig.pvd in Paraview or the 
+  eig#.vtu files in VisIt. Eigenfunctions are arranged in order of decreasing
+  value of real part; real and imaginary part of eigenfunctions are saved in 
+  the files.
+
+
+Unsteady solver
+
+   $ python ns_picard.py

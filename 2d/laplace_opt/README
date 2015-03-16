@@ -1,0 +1,11 @@
+Generate mesh by running the makefile
+
+make
+
+To run the optimization, type
+
+python demo.py linear
+
+or
+
+python demo.py adjoint
