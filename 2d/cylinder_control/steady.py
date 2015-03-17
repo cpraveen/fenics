@@ -66,7 +66,7 @@ bcs0  = [bcin0, bccyl0, bcsid0]
 
 Ur = 1.0                # Reference velocity
 D  = 0.1                # dia of cylinder
-Re = 100.0              # Reynolds number
+Re = 50.0               # Reynolds number
 nu = Constant(Ur*D/Re)  # viscosity coefficient
 
 up0.interpolate(initial_condition())
