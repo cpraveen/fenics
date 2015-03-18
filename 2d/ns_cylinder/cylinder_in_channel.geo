@@ -59,8 +59,9 @@ Background Field = 4;
 Mesh.CharacteristicLengthExtendFromBoundary = 0;
 
 Physical Surface(1000000) = {1, -9};
-Physical Line(1000001) = {8, 17}; // inlet
-Physical Line(1000002) = {7, 16}; // side walls
-Physical Line(1000003) = {6, 15}; // outlet
-Physical Line(1000004) = {2, 4, 11, 13}; // cylinder
-Physical Line(1000005) = {3,12}; // feedback boundary
+Physical Line(1) = {8, 17};        // inlet
+Physical Line(2) = {7, 16};        // side walls
+Physical Line(3) = {6, 15};        // outlet
+Physical Line(4) = {2, 4, 11, 13}; // cylinder
+Physical Line(5) = {3};            // feedback boundary
+Physical Line(6) = {12};           // feedback boundary
