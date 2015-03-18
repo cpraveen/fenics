@@ -24,9 +24,10 @@ class NSProblem():
         self.Q = FunctionSpace(self.mesh, "CG", udeg-1)
         self.W = MixedFunctionSpace([self.V, self.Q])
 
-        print "Velocity dofs = ", self.V.dim()
-        print "Pressure dofs = ", self.Q.dim()
-        print "Total    dofs = ", self.W.dim()
+        print "Reynolds number = ", Re
+        print "Velocity dofs   = ", self.V.dim()
+        print "Pressure dofs   = ", self.Q.dim()
+        print "Total    dofs   = ", self.W.dim()
 
         # Define boundary conditions
         uinlet   = Expression(("1.5*(1.0 - (x[1]/0.2)*(x[1]/0.2))", "0"))
@@ -277,5 +278,97 @@ class NSProblem():
                 print "cfl is too large !!!"
                 break
             if it%100 == 0:
+                u,p = up2.split()
+                fu << u
+
+    def run_bdf_ext(self):
+        # Solution variables
+        up0 = Function(self.W)  # u^{n-2}
+        up1 = Function(self.W)  # u^{n-1}
+        up2 = Function(self.W)  # u^{n}
+
+        # Trial functions
+        u,p = TrialFunctions(self.W)
+
+        # Test functions
+        v,q = TestFunctions(self.W)
+
+        # These are used to estimate cfl number
+        DG   = FunctionSpace(self.mesh, 'DG', 0)
+        vdg  = TestFunction(DG)
+        h    = [cell.diameter() for cell in cells(self.mesh)]
+        area = [cell.volume()   for cell in cells(self.mesh)]
+
+        nu = self.viscosity_coefficient()
+        dt = 0.01; idt= Constant(1.0/dt)
+
+        #up0.interpolate(initial_condition())
+        File("steady.xml") >> up0.vector()
+        u0 = as_vector((up0[0], up0[1]))
+        u1 = as_vector((up1[0], up1[1]))
+        u2 = as_vector((up2[0], up2[1]))
+
+        t, Tf, it  = 0.0, 50.0, 0
+
+        ffile = open('force.dat', 'w')
+        cd, cl = self.compute_forces(nu, u0, up0[2])
+        force=str(it)+" "+str(t)+" "+str(cl)+" "+str(cd)+"\n"
+        ffile.write(force); ffile.flush()
+
+        fu = File("u.pvd")
+
+        # First time step: BDF1
+        F1 = idt*inner(u - u0, v)*dx       \
+            + inner(grad(u)*u0, v)*dx      \
+            - p*div(v)*dx                   \
+            + nu*inner(grad(u), grad(v))*dx \
+            - q*div(u)*dx
+
+        a, L  = lhs(F1), rhs(F1)
+
+        A  = PETScMatrix(); assemble(a, tensor=A)
+        solver = LUSolver(A)
+
+        b  = assemble(L)
+        [bc.apply(A,b) for bc in self.bcs]
+        solver.solve(up1.vector(), b)
+        t += dt; it+= 1
+
+        # Now switch to BDF2
+        uext = 2.0*u1 - u0
+        F2 = idt*inner(1.5*u - 2.0*u1 + 0.5*u0, v)*dx  \
+            + inner(grad(u)*uext, v)*dx                  \
+            - p*div(v)*dx                               \
+            + nu*inner(grad(u), grad(v))*dx             \
+            - q*div(u)*dx
+
+        a, L  = lhs(F2), rhs(F2)
+
+        A  = PETScMatrix(); assemble(a, tensor=A)
+        solver = LUSolver(A)
+        solver.parameters['same_nonzero_pattern'] = True
+
+        while t < Tf:
+            # estimate cfl number
+            uavg = assemble(sqrt(u1[0]**2+u1[1]**2)*vdg*dx)
+            uavg = uavg.array()/area
+            cfl  = dt * max(uavg/h)
+
+            assemble(a, tensor=A)
+            assemble(L, tensor=b)
+            [bc.apply(A,b) for bc in self.bcs]
+            solver.solve(up2.vector(), b)
+            up0.assign(up1)
+            up1.assign(up2)
+            t += dt; it+= 1
+            print "it = %6d,   t = %12.6e,   cfl = %12.3e" % (it,t,cfl)
+            # Compute lift/drag and store in arrays
+            cd, cl = self.compute_forces(nu, u2, up2[2])
+            force=str(it)+" "+str(t)+" "+str(cl)+" "+str(cd)+"\n"
+            ffile.write(force); ffile.flush()
+            if cfl > 100.0:
+                print "cfl is too large !!!"
+                break
+            if it%50 == 0:
                 u,p = up2.split()
                 fu << u
