@@ -210,9 +210,10 @@ class NSProblem():
         area = [cell.volume()   for cell in cells(self.mesh)]
 
         nu = self.viscosity_coefficient()
-        dt = 0.0005; idt= Constant(1.0/dt)
+        dt = 0.001; idt= Constant(1.0/dt)
 
-        up0.interpolate(initial_condition())
+        #up0.interpolate(initial_condition())
+        File("steady.xml") >> up0.vector()
         u0 = as_vector((up0[0], up0[1]))
         u1 = as_vector((up1[0], up1[1]))
         u2 = as_vector((up2[0], up2[1]))
@@ -233,10 +234,9 @@ class NSProblem():
         a, L  = lhs(F1), rhs(F1)
 
         A  = PETScMatrix(); assemble(a, tensor=A)
-        solver = LUSolver(A)
-
         b  = assemble(L)
         [bc.apply(A,b) for bc in self.bcs]
+        solver = LUSolver(A)
         solver.solve(up1.vector(), b)
         t += dt; it+= 1
 
@@ -250,9 +250,9 @@ class NSProblem():
         a, L  = lhs(F2), rhs(F2)
 
         A  = assemble(a)
+        [bc.apply(A) for bc in self.bcs]
         solver = LUSolver(A)
         solver.parameters['reuse_factorization'] = True
-        [bc.apply(A) for bc in self.bcs]
 
         while t < Tf:
             # estimate cfl number
@@ -344,9 +344,11 @@ class NSProblem():
 
         a, L  = lhs(F2), rhs(F2)
 
-        A  = PETScMatrix(); assemble(a, tensor=A)
-        solver = LUSolver(A)
-        solver.parameters['same_nonzero_pattern'] = True
+        # Following fails in v1.5, fix will come in v1.6
+        #A  = PETScMatrix(); assemble(a, tensor=A)
+        #solver = LUSolver(A)
+        #solver.parameters['same_nonzero_pattern'] = True
+        A  = PETScMatrix()
 
         while t < Tf:
             # estimate cfl number
@@ -357,6 +359,7 @@ class NSProblem():
             assemble(a, tensor=A)
             assemble(L, tensor=b)
             [bc.apply(A,b) for bc in self.bcs]
+            solver = LUSolver(A)
             solver.solve(up2.vector(), b)
             up0.assign(up1)
             up1.assign(up2)
