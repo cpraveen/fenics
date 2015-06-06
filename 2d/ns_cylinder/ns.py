@@ -170,7 +170,7 @@ class NSProblem():
         sigma = 10.0
         vals, vecs = la.eigs(A, k=200, M=M, sigma=sigma, which='LM', ncv=400, tol=1.0e-8)
         ii = np.argsort(vals)[::-1]
-        fv = File("eig.pvd")
+        fv = File("eigvtk/eig.pvd")
         up = Function(self.W)
         fe = open("eig.dat","w")
         for i in ii:
@@ -219,7 +219,7 @@ class NSProblem():
         u2 = as_vector((up2[0], up2[1]))
 
         t, Tf, it  = 0.0, 10.0, 0
-        fu = File("u.pvd")
+        fu = File("solvtk/u.pvd")
 
         # First time step: BDF1
         # Predicted velocity
@@ -315,7 +315,7 @@ class NSProblem():
         force=str(it)+" "+str(t)+" "+str(cl)+" "+str(cd)+"\n"
         ffile.write(force); ffile.flush()
 
-        fu = File("u.pvd")
+        fu = File("solvtk/u.pvd")
 
         # First time step: BDF1
         F1 = idt*inner(u - u0, v)*dx       \
