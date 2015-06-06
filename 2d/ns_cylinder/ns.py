@@ -137,7 +137,7 @@ class NSProblem():
             + p*div(v)*dx                   \
             + q*div(u)*dx
 
-        Aa = PETScMatrix(); assemble(F, tensor=Aa)
+        Aa = assemble(F)
 
         # Convert to sparse format
         rows, cols, values = Aa.data()
@@ -145,7 +145,7 @@ class NSProblem():
         print "Size of Aa =",Aa.shape
 
         m  = inner(u,v)*dx
-        Ma = PETScMatrix(); assemble(m, tensor=Ma)
+        Ma = assemble(m)
 
         # Convert to sparse format
         rows, cols, values = Ma.data()
