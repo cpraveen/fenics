@@ -4,7 +4,7 @@ D    = 0.1;   // diameter
 r    = D/2.0; // radius
 
 theta = 60;
-phi = 20;
+phi = 10;
 
 theta = (Pi/180.0)*theta;
 phi =  (Pi/180.0)*phi;

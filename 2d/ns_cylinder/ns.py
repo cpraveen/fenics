@@ -1,5 +1,17 @@
 from dolfin import *
+from math import atan2
 
+# position of blowing/suction slots
+# NOTE: This must be same as in the geo file.
+thetac = 60.0   # location of slot center
+thetaw = 10.0   # angular width of slot
+xc     = 0.25   # center of cylinder
+
+# Angular range of top slot [theta1, theta2]
+theta1 = thetac - 0.5 * thetaw
+theta2 = thetac + 0.5 * thetaw
+
+# Parabolic initial condition, used as inlet bc
 class initial_condition(Expression):
    def eval(self, value, x):
       value[0] = 1.5*(1.0 - (x[1]/0.2)*(x[1]/0.2))
@@ -8,6 +20,48 @@ class initial_condition(Expression):
       return value
    def value_shape(self):
       return (3,)
+
+# Function defining the blowing velocity profile
+def G(s):
+    if s <= 0.0:
+        return 0.0
+    elif s >= 1.0:
+        return 1.0
+    else:
+        return s**3 * (6.0*s**2 - 15.0*s + 10.0)
+
+def g(theta,tc,tw):
+    s = (theta - tc)/tw + 0.5
+    return G(3.0*s) - G(3.0*(s-1.0)+1.0)
+
+# Velocity at slot
+class velocity(Expression):
+    def __init__(self, u1=0.0, u2=0.0):
+        self.u1 = u1
+        self.u2 = u2
+
+    def eval(self, value, x):
+        xx  = x[0] - xc; yy = x[1]
+        r   = sqrt(xx**2 + yy**2)
+        nx  = xx/r
+        ny  = yy/r
+        ang = atan2(yy,xx) * 180.0/pi
+        if (ang-theta1) > -1.0e-13 and (ang-theta2) < 1.0e-13:
+            veln     = self.u1 * g(ang,thetac,thetaw)
+            value[0] = veln * nx
+            value[1] = veln * ny
+        elif (ang+theta1) < 1.0e-13 and (ang+theta2) > -1.0e-13:
+            veln     = self.u2 * g(ang,-thetac,thetaw)
+            value[0] = veln * nx
+            value[1] = veln * ny
+        else:
+            veln     = 0.0
+            value[0] = 0.0
+            value[1] = 0.0
+        return value
+
+    def value_shape(self):
+        return (2,)
 
 class NSProblem():
     def __init__(self, Re, udeg):
@@ -34,8 +88,9 @@ class NSProblem():
         inlet    = DirichletBC(self.W.sub(0), uinlet, boundaries, 1)
         side     = DirichletBC(self.W.sub(0), (0, 0), boundaries, 2)
         cyl      = DirichletBC(self.W.sub(0), (0, 0), boundaries, 4)
-        cont1    = DirichletBC(self.W.sub(0), (0, 0), boundaries, 5)
-        cont2    = DirichletBC(self.W.sub(0), (0, 0), boundaries, 6)
+        self.vslot = velocity(0.0, 0.0)
+        cont1    = DirichletBC(self.W.sub(0), self.vslot, boundaries, 5)
+        cont2    = DirichletBC(self.W.sub(0), self.vslot, boundaries, 6)
         self.bcs = [inlet, side, cyl, cont1, cont2]
 
     def viscosity_coefficient(self):
@@ -87,14 +142,14 @@ class NSProblem():
         solver.solve()
 
         # Save steady solution
-        File("steady.xml") << w.vector()
+        File("steady/steady.xml") << w.vector()
 
         # Save vtk for visualization
         (u,p) = w.split()
         print "Saving velocity.pvd"
-        File("velocity.pvd") << u
+        File("steady/velocity.pvd") << u
         print "Saving pressure.pvd"
-        File("pressure.pvd") << p
+        File("steady/pressure.pvd") << p
 
         # Compute and save vorticity in vtk format
         r = TrialFunction(self.Q)
@@ -104,7 +159,7 @@ class NSProblem():
         vort = Function(self.Q)
         solve(a == L, vort)
         print "Saving vorticity.pvd"
-        File("vorticity.pvd") << vort
+        File("steady/vorticity.pvd") << vort
 
         drag, lift = self.compute_forces(nu, u, p)
         print "Drag =", drag
@@ -119,7 +174,7 @@ class NSProblem():
 
         ups = Function(self.W)
         print "Reading stationary solution from file steady.xml"
-        File("steady.xml") >> ups.vector()
+        File("steady/steady.xml") >> ups.vector()
         us = as_vector((ups[0],ups[1]))
 
         # Define test functions
@@ -158,7 +213,20 @@ class NSProblem():
 
         N = self.W.dim()
         freeinds = np.setdiff1d(range(N),bcinds,assume_unique=True).astype(np.int32)
-        
+        pinds = self.W.sub(1).dofmap().dofs()
+
+        print "Writing free indices into freeinds.txt"
+        f = open('freeinds.txt','w')
+        for item in freeinds:
+           f.write("%d\n" % item)
+        f.close()
+
+        print "Writing pressure indices into pinds.txt"
+        f = open('pinds.txt','w')
+        for item in pinds:
+           f.write("%d\n" % item)
+        f.close()        
+
         A = Aa[freeinds,:][:,freeinds]
         print "Size of A =",A.shape
 
@@ -213,7 +281,7 @@ class NSProblem():
         dt = 0.001; idt= Constant(1.0/dt)
 
         #up0.interpolate(initial_condition())
-        File("steady.xml") >> up0.vector()
+        File("steady/steady.xml") >> up0.vector()
         u0 = as_vector((up0[0], up0[1]))
         u1 = as_vector((up1[0], up1[1]))
         u2 = as_vector((up2[0], up2[1]))
@@ -303,7 +371,7 @@ class NSProblem():
         dt = 0.01; idt= Constant(1.0/dt)
 
         #up0.interpolate(initial_condition())
-        File("steady.xml") >> up0.vector()
+        File("steady/steady.xml") >> up0.vector()
         u0 = as_vector((up0[0], up0[1]))
         u1 = as_vector((up1[0], up1[1]))
         u2 = as_vector((up2[0], up2[1]))
