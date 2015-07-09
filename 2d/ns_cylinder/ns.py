@@ -1,5 +1,9 @@
 from dolfin import *
 from math import atan2
+import numpy as np
+import scipy.sparse as sps
+import scipy.sparse.linalg as sla
+import scipy.io as sio
 
 # position of blowing/suction slots
 # NOTE: This must be same as in the geo file.
@@ -58,10 +62,28 @@ class velocity(Expression):
             veln     = 0.0
             value[0] = 0.0
             value[1] = 0.0
-        return value
 
     def value_shape(self):
         return (2,)
+
+# Return velocity and pressure, where pressure is zero and not
+# really used. Needed only to determine the control operator
+# B. This function calls velocity and seems to be slow.
+class allvar(Expression):
+    def __init__(self, u1=0.0, u2=0.0):
+        self.u1 = u1
+        self.u2 = u2
+        self.v  = velocity(u1, u2)
+
+    def eval(self, value, x):
+        vel = np.zeros(2)
+        self.v.eval(vel,x)
+        value[0] = vel[0]
+        value[1] = vel[1]
+        value[2] = 0.0
+
+    def value_shape(self):
+        return (3,)
 
 class NSProblem():
     def __init__(self, Re, udeg):
@@ -89,9 +111,9 @@ class NSProblem():
         side     = DirichletBC(self.W.sub(0), (0, 0), boundaries, 2)
         cyl      = DirichletBC(self.W.sub(0), (0, 0), boundaries, 4)
         self.vslot = velocity(0.0, 0.0)
-        cont1    = DirichletBC(self.W.sub(0), self.vslot, boundaries, 5)
-        cont2    = DirichletBC(self.W.sub(0), self.vslot, boundaries, 6)
-        self.bcs = [inlet, side, cyl, cont1, cont2]
+        self.cont1    = DirichletBC(self.W.sub(0), self.vslot, boundaries, 5)
+        self.cont2    = DirichletBC(self.W.sub(0), self.vslot, boundaries, 6)
+        self.bcs = [inlet, side, cyl, self.cont1, self.cont2]
 
     def viscosity_coefficient(self):
         return Constant(self.D*self.Uinf/self.Re)
@@ -166,10 +188,6 @@ class NSProblem():
         print "Lift =", lift
 
     def linear_system(self):
-        import numpy as np
-        import scipy.sparse as sps
-        import scipy.sparse.linalg as la
-
         parameters.linear_algebra_backend = "uBLAS"
 
         ups = Function(self.W)
@@ -233,10 +251,33 @@ class NSProblem():
         M = Ma[freeinds,:][:,freeinds]
         print "Size of M =",M.shape
 
+        vinds1 = self.cont1.get_boundary_values().keys()
+        vinds2 = self.cont2.get_boundary_values().keys()
+
+        # Velocity control operator
+        ua = interpolate(allvar(1.0,0.0),self.W)
+        ua = ua.vector().array()
+        Bv1= Aa[freeinds,:][:,vinds1].dot(ua[vinds1])
+        print "Size of Bv1 =", Bv1.shape[0]
+
+        ua = interpolate(allvar(0.0,1.0),self.W)
+        ua = ua.vector().array()
+        Bv2= Aa[freeinds,:][:,vinds2].dot(ua[vinds2])
+        print "Size of Bv2 =", Bv2.shape[0]
+
+        B = np.column_stack((Bv1,Bv2))
+        print "Size of B =", B.shape[0]
+
+        # Save matrices in matlab format
+        print "Saving linear system into linear.mat"
+        sio.savemat('linear.mat', mdict={'M':M, 'A':A, 'B':B}, oned_as='column')
+
+        return
+
         # Compute eigenvalues/vectors of (A,M)
         print "Computing eigenvalues/vectors ..."
         sigma = 10.0
-        vals, vecs = la.eigs(A, k=200, M=M, sigma=sigma, which='LM', ncv=400, tol=1.0e-8)
+        vals, vecs = sla.eigs(A, k=200, M=M, sigma=sigma, which='LM', ncv=400, tol=1.0e-8)
         ii = np.argsort(vals)[::-1]
         fv = File("eigvtk/eig.pvd")
         up = Function(self.W)
