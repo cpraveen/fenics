@@ -53,7 +53,9 @@ def solve_induction(degree,np,itsave):
 
    T = 0.5*pi
    h = 1.0/np
-   dt = h
+   dt = 0.5 * h
+   N = int(T/dt)
+   dt = T/N
    n = FacetNormal(mesh)
 
    Bt= 0.5*(B + B0)
@@ -67,8 +69,6 @@ def solve_induction(degree,np,itsave):
 
    it, t = 0, 0.0
    while t < T:
-      if t+dt > T:
-         dt = T - t
       g.t = t + 0.5*dt
       b = assemble(L)
       solver.solve(B1.vector(), b)

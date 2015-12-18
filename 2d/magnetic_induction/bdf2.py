@@ -53,14 +53,20 @@ def solve_induction(degree,np,itsave):
 
    T = 0.5*pi
    h = 1.0/np
-   dt = h
+   dt = 0.5 * h
+   N = int(T/dt)
+   dt = T/N
    n = FacetNormal(mesh)
 
+   it, t = 0, 0.0
+
    # First time step: BDF1
+   g.t= dt
    F1 = inner(B-B0,v)*dx + dt*BForm(B,v,u,g,n)
    a1 = lhs(F1)
    L1 = rhs(F1)
    solve(a1==L1, B1, bcs=None)
+   it += 1; t += dt
 
    # Now use BDF2
    F = inner(B-(4.0/3.0)*B1+(1.0/3.0)*B0,v)*dx + (2.0/3.0)*dt*BForm(B,v,u,g,n)
@@ -71,10 +77,7 @@ def solve_induction(degree,np,itsave):
    solver = LUSolver(A)
    solver.parameters['reuse_factorization'] = True
 
-   it, t = 0, 0.0
    while t < T:
-      if t+dt > T:
-         dt = T - t
       g.t = t + dt
       b = assemble(L)
       solver.solve(B2.vector(), b)
