@@ -35,7 +35,6 @@ def solve_induction(degree,np,itsave):
    v = TestFunction(X)
 
    B1 = Function(X)
-   B2 = Function(X)
    # Velocity field
    u = Expression(("-x[1]", "x[0]"))
    # Exact solution
@@ -45,11 +44,12 @@ def solve_induction(degree,np,itsave):
 
    # Set initial condition
    B0 = interpolate(g, X)
+   B1 = Function(X)
 
    # Save initial condition to file
    fsol = File("sol.pvd")
-   B2.assign(B0)
-   fsol << B2
+   B1.assign(B0)
+   fsol << B1
 
    T = 0.5*pi
    h = 1.0/np
@@ -58,18 +58,8 @@ def solve_induction(degree,np,itsave):
    dt = T/N
    n = FacetNormal(mesh)
 
-   it, t = 0, 0.0
-
-   # First time step: BDF1
-   g.t= dt
-   F1 = inner(B-B0,v)*dx + dt*BForm(B,v,u,g,n)
-   a1 = lhs(F1)
-   L1 = rhs(F1)
-   solve(a1==L1, B1, bcs=None)
-   it += 1; t += dt
-
-   # Now use BDF2
-   F = inner(B-(4.0/3.0)*B1+(1.0/3.0)*B0,v)*dx + (2.0/3.0)*dt*BForm(B,v,u,g,n)
+   Bt= 0.5*(B + B0)
+   F = inner(B-B0,v)*dx + dt*BForm(Bt,v,u,g,n)
    
    a = lhs(F)
    L = rhs(F)
@@ -77,26 +67,26 @@ def solve_induction(degree,np,itsave):
    solver = LUSolver(A)
    solver.parameters['reuse_factorization'] = True
 
+   it, t = 0, 0.0
    while t < T:
-      g.t = t + dt
+      g.t = t + 0.5*dt
       b = assemble(L)
-      solver.solve(B2.vector(), b)
+      solver.solve(B1.vector(), b)
       B0.assign(B1)
-      B1.assign(B2)
       it += 1; t += dt
       print "it, dt, t = ", it, dt, t
       if it%itsave == 0:
-         fsol << B2
+         fsol << B1
 
    # Compute error norms
    Be = Expression(ge,t=T)
-   err_l2 = errornorm(Be, B2, 'l2')
-   Bd = div(B2)**2*dx
+   err_l2 = errornorm(Be, B1, 'l2')
+   Bd = div(B1)**2*dx
    div_l2 = sqrt(assemble(Bd))
    # Save error into file
    Berr = Function(X)
    Bex  = interpolate(Be, X)
-   Berr.vector()[:] = B2.vector() - Bex.vector()
+   Berr.vector()[:] = B1.vector() - Bex.vector()
    File("Berr.pvd") << Berr
    return div_l2, err_l2
 
