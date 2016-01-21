@@ -89,7 +89,7 @@ def solve_induction(degree,np,itsave):
          fsol << B2
 
    # Compute error norms
-   Be = Expression(ge,t=T)
+   Be = Expression(ge,t=t)
    err_l2 = errornorm(Be, B2, 'l2')
    Bd = div(B2)**2*dx
    div_l2 = sqrt(assemble(Bd))
