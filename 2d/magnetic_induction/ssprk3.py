@@ -65,9 +65,10 @@ def solve_induction(degree,np,itsave):
 
    it, t = 0, 0.0
 
-   # Now use BDF2
+   # rhs of the problem
    L = -BForm(B1,v,u,g,n)
    
+   # compute mass matrix
    m = inner(B,v)*dx
    M  = PETScMatrix(); assemble(m, tensor=M)
    solver = LUSolver(M)
