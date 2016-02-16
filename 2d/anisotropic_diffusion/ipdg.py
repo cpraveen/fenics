@@ -73,7 +73,9 @@ while t < Tf:
     rhs = assemble(L)
     solver.solve(u.vector(), rhs)
     u0.assign(u)
+    umin = u.vector().array().min()
+    umax = u.vector().array().max()
     t += dt; it += 1
-    print "it, dt, t = ", it, dt, t
+    print "it, dt, t = ", it, dt, t, umin, umax
     if it%100 == 0:
         sol << u
