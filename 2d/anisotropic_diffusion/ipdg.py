@@ -49,7 +49,7 @@ Fcom = idt*(u - u0)*v*dx           \
        - inner(qu, grad(v))*dx     \
        + dot(avg(qu),jump(v,n))*dS \
        + dot(avg(qv),jump(u,n))*dS \
-       + ip*jump(u*B,n)*jump(v*B,n)*dS
+       + ip*dot(avg(B),jump(u,n))*dot(avg(B),jump(v,n))*dS
 Fdir = v*dot(qu,n)*ds              \
        + (u-g)*dot(qv,n)*ds        \
        + ipb*(u-g)*v*ds
