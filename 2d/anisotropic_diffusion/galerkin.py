@@ -23,7 +23,7 @@ class InitialCondition(Expression):
 p0 = Point(xmin, ymin)
 p1 = Point(xmax, ymax)
 mesh = RectangleMesh(p0, p1, nx, ny)
-V = FunctionSpace(mesh, 'DG', degree)
+V = FunctionSpace(mesh, 'CG', degree)
 
 # Magnetic field
 B = Expression(("1.0/sqrt(2.0)","-1.0/sqrt(2.0)"))
@@ -40,21 +40,10 @@ u0 = interpolate(InitialCondition(), V)
 dt = 0.001
 idt = Constant(1.0/dt)
 n = FacetNormal(mesh)
-h = CellSize(mesh)
 qu = qflux(B,u)
-qv = qflux(B,v)
-ip = Constant(Cip*chi_par)/avg(h)
-ipb= Constant(Cip*chi_par)/h
-Fcom = idt*(u - u0)*v*dx           \
-       - inner(qu, grad(v))*dx     \
-       + dot(avg(qu),jump(v,n))*dS \
-       + dot(avg(qv),jump(u,n))*dS \
-       + ip*jump(u*B,n)*jump(v*B,n)*dS
-Fdir = v*dot(qu,n)*ds              \
-       + (u-g)*dot(qv,n)*ds        \
-       + ipb*(u-g)*v*ds
+F = idt*(u - u0)*v*dx       \
+    - inner(qu, grad(v))*dx
 
-F = Fcom
 a, L = lhs(F), rhs(F)
 
 A  = PETScMatrix(); assemble(a, tensor=A)
