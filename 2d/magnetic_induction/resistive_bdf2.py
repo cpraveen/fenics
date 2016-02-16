@@ -46,7 +46,7 @@ def BForm(B,v,u,g,n,h):
         - 2*avg(eps*Curl(v))*avg(Cross(n,B))*dS            \
         - eps*Curl(B)*Cross(n,v)*ds                        \
         - eps*Curl(v)*Cross(n,B-g)*ds                      \
-        + (C1*eps/h)*avg(Cross(n,B))*avg(Cross(n,v))*dS    \
+        + (C1*eps/avg(h))*avg(Cross(n,B))*avg(Cross(n,v))*dS    \
         + (C1*eps/h)*Cross(n,B-g)*Cross(n,v)*ds
    return F1 + F2
 
@@ -75,11 +75,12 @@ def solve_induction(degree,np,itsave):
    fsol << B2
 
    T = 0.5*pi
-   h = 1.0/np
+   h = 2.0/np
    dt = 0.5 * h
    N = int(T/dt)
    dt = T/N
    n = FacetNormal(mesh)
+   h = CellSize(mesh)
 
    it, t = 0, 0.0
 
