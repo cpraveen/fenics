@@ -3,8 +3,7 @@ Induction equation using DG
 B_t + div(uB-Bu) + udiv(B) = 0 
 in [-1,1]x[-1,1] or [0,1]x[0,1], u = (-y, x)
 B0 = Initial data, g = 0 bdy data
-Backward differentiation formula
-y_n+2 - 4/3 y_n+1 + 1/3 y_n = 2/3 h f(t_n+2,y_n+2) 
+SSPRK3 for time integration
 Authors: Tanmay Sarkar, Praveen C
 
 To get help
