@@ -2,6 +2,10 @@ import numpy as np
 import matplotlib.pyplot as plt
 from dolfin import *
 
+#PETScOptions().set("snes_monitor")
+#PETScOptions().set("snes_view")
+#PETScOptions().set("snes_converged_reason")
+
 nc = 101
 T  = 0.02  # final time
 h  = 1.0/(nc-1)
