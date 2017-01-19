@@ -12,25 +12,26 @@ Gunzburger and Hou
 TREATING INHOMOGENEOUS ESSENTIAL BOUNDARY CONDITIONS IN FINITE ELEMENT METHODS AND THE CALCULATION OF BOUNDARY STRESSES
 SIAM J. Num. Anal., vol. 20, no. 2, pp. 390-424, April 1992
 """
-import scipy.sparse as sps
+from scipy.sparse.linalg import cg
 from dolfin import *
 
-parameters.linear_algebra_backend = "uBLAS"
+parameters.linear_algebra_backend = "Eigen"
 
 class boundary(SubDomain):
    def inside(self,x,on_boundary):
       return on_boundary
 
-uexact = Expression("x[0]*x[0] - x[1]*x[1]")
 
+degree = 1
 n = 50
 mesh = UnitSquareMesh(n,n)
-V = FunctionSpace(mesh, 'CG', 1)
+V = FunctionSpace(mesh, 'CG', degree)
 
-u = TestFunction(V)
-v = TrialFunction(V)
+u = TrialFunction(V)
+v = TestFunction(V)
 
 ubc = Function(V)
+uexact = Expression("x[0]*x[0] - x[1]*x[1]",degree=degree)
 
 # Project boundary condition
 M = assemble(u*v*ds)
@@ -38,12 +39,11 @@ b = assemble(uexact*v*ds)
 bd = boundary()
 bc = DirichletBC(V, ubc, bd)
 binds = bc.get_boundary_values().keys()
-rows, cols, values = M.data()
-M = sps.csc_matrix((values, cols, rows))
+M = as_backend_type(M).sparray()
 M = M[binds,:][:,binds]
 rhs = b[binds]
 
-x,info = sps.linalg.cg(M, rhs)
+x,info = cg(M, rhs)
 ubc.vector().zero()
 ubc.vector()[binds] = x
 
@@ -58,7 +58,7 @@ File("sol.pvd") << u
 a = inner(grad(u), grad(v))*dx
 b = assemble(a-L)
 b = b[binds]
-tau,info = sps.linalg.cg(M, b)
+tau,info = cg(M, b)
 stress = Function(V)
 stress.vector().zero()
 stress.vector()[binds] = tau
