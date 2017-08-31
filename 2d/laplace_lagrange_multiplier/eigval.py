@@ -20,6 +20,7 @@ class boundary(SubDomain):
       return on_boundary
 
 
+shift  = 3.0*pi**2
 degree = 1
 n      = 50
 mesh = UnitSquareMesh(n,n)
@@ -31,7 +32,7 @@ v = TestFunction(V)
 M = assemble(u*v*dx)
 M = as_backend_type(M).sparray()
 
-A = assemble(-inner(grad(u),grad(v))*dx)
+A = assemble(-inner(grad(u),grad(v))*dx + Constant(shift)*u*v*dx)
 A = as_backend_type(A).sparray()
 
 # Boundary mass matrix
@@ -41,7 +42,8 @@ bd = boundary()
 bc = DirichletBC(V, 0.0, bd)
 binds = bc.get_boundary_values().keys()
 N = as_backend_type(N).sparray()
+Mb= N[binds,:][:,binds] # boundary mass matrix
 N = N[:,:][:,binds]
 
 print "Saving matrices into linear.mat"
-sio.savemat('linear.mat', mdict={'M':M, 'A':A, 'N':N}, oned_as='column')
+sio.savemat('linear.mat', mdict={'M':M, 'A':A, 'N':N, 'Mb':Mb}, oned_as='column')
