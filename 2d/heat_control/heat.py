@@ -10,6 +10,7 @@ dt = 0.01
 mesh = Mesh('mesh.xml')
 
 V = FunctionSpace(mesh, 'CG', degree)
+u, v = TrialFunction(V), TestFunction(V)
 
 # Load feedback
 if with_control:
@@ -29,7 +30,7 @@ u1 = Function(V) # sol at n-1
 u2 = Function(V) # sol at n
 
 # Set initial condition
-eigvec = Expression('eps*sin(M_PI*x[0])*sin(M_PI*x[1]',degree=degree,eps=1e-2)
+eigvec = Expression('eps*sin(M_PI*x[0])*sin(M_PI*x[1])',degree=degree,eps=1e-2)
 u0 = interpolate(V,eigvec)
 energy0 = sqrt(assemble(u0**2*dx))
 print('Initial energy = %12.6e' % energy)
