@@ -39,7 +39,7 @@ print('Initial energy = %12.6e' % energy)
 t, it = 0.0, 0
 
 # First time step: use BDF1
-F1 = idt*(u - u0)*dx + inner(grad(u),grad(v))*dx + Constant(shift)*u*v*dx
+F1 = idt*(u - u0)*dx + inner(grad(u),grad(v))*dx - Constant(shift)*u*v*dx
 a, L = lhs(F1), rhs(F1)
 
 if with_control:
@@ -50,7 +50,7 @@ t += dt; it += 1
 
 # Now define BDF2 for remaining steps
 F2 = idt*(1.5*u - 2.0*u1 + 0.5*u0)*dx \
-        + inner(grad(u),grad(v))*dx + Constant(shift)*u*v*dx
+        + inner(grad(u),grad(v))*dx - Constant(shift)*u*v*dx
 a, L = lhs(F2), rhs(F2)
 
 while t < Tf:
