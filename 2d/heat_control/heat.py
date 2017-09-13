@@ -30,16 +30,16 @@ u1 = Function(V) # sol at n-1
 u2 = Function(V) # sol at n
 
 # Set initial condition
-eigvec = Expression('eps*sin(M_PI*x[0])*sin(M_PI*x[1])',degree=degree,eps=1e-2)
-u0 = interpolate(V,eigvec)
+eigvec = Expression('eps*sin(pi*x[0])*sin(pi*x[1])',degree=degree,eps=1e-2)
+u0 = interpolate(eigvec,V)
 energy0 = sqrt(assemble(u0**2*dx))
-print('Initial energy = %12.6e' % energy)
+print('Initial energy = %12.6e' % energy0)
 
 # Time counter
 t, it = 0.0, 0
 
 # First time step: use BDF1
-F1 = idt*(u - u0)*dx + inner(grad(u),grad(v))*dx - Constant(shift)*u*v*dx
+F1 = idt*(u - u0)*v*dx + inner(grad(u),grad(v))*dx - Constant(shift)*u*v*dx
 a, L = lhs(F1), rhs(F1)
 
 if with_control:
@@ -47,9 +47,11 @@ if with_control:
 
 solve(a == L, u1, bc)
 t += dt; it += 1
+energy = sqrt(assemble(u1**2*dx))
+print('it,t,energy = %5d %12.6e %12.6e' % (it,t,energy))
 
 # Now define BDF2 for remaining steps
-F2 = idt*(1.5*u - 2.0*u1 + 0.5*u0)*dx \
+F2 = idt*(1.5*u - 2.0*u1 + 0.5*u0)*v*dx \
         + inner(grad(u),grad(v))*dx - Constant(shift)*u*v*dx
 a, L = lhs(F2), rhs(F2)
 
