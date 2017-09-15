@@ -1,10 +1,18 @@
+import argparse
 import scipy.io as sio
 from dolfin import *
 from param import *
 
-with_control = False
-Tf = 1.0
-dt = 0.01
+parser = argparse.ArgumentParser()
+parser.add_argument('-time', type=float, help='Final time', default=1.0)
+parser.add_argument('-dt', type=float, help='Time step', default=0.01)
+parser.add_argument('-with_control', dest='control', action='store_true')
+parser.set_defaults(control=False)
+args = parser.parse_args()
+
+with_control = args.control
+Tf = args.time
+dt = args.dt
 
 # Read mesh from file
 mesh = Mesh('mesh.xml')

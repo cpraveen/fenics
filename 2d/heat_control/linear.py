@@ -15,7 +15,7 @@ from param import *
 
 parameters.linear_algebra_backend = "Eigen"
 
-mesh = UnitSquareMesh(n,n)
+mesh = Mesh('mesh.xml')
 V = FunctionSpace(mesh, 'CG', degree)
 
 u = TrialFunction(V)
@@ -39,6 +39,3 @@ N = N[:,:][:,binds]
 
 print 'Saving matrices into linear.mat'
 sio.savemat('linear.mat', mdict={'M':M, 'A':A, 'N':N, 'Mb':Mb}, oned_as='column')
-
-print 'Saving mesh to mesh.xml'
-File('mesh.xml') << mesh
