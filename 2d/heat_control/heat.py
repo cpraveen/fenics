@@ -1,3 +1,4 @@
+import numpy as np
 import argparse
 import scipy.io as sio
 from dolfin import *
@@ -48,20 +49,21 @@ flog = open('log.txt','w')
 
 # Time counter
 t, it = 0.0, 0
-flog.write('%5d %12.6e %12.6e\n' % (it,t,energy0))
+flog.write('%5d %12.6e %12.6e %12.6e\n' % (it,t,energy0,0.0))
 
 # First time step: use BDF1
 F1 = idt*(u - u0)*v*dx + inner(grad(u),grad(v))*dx - Constant(shift)*u*v*dx
 a, L = lhs(F1), rhs(F1)
 
 if with_control:
-    uc.vector()[binds] = -np.dot(gain['Kt'], u0.vector().array())
+    uc.vector()[binds] = -np.dot(gain['K'], u0.vector().array())
 
 solve(a == L, u1, bc)
 t += dt; it += 1
 energy = sqrt(assemble(u1**2*dx))
+control = sqrt(assemble(uc**2*ds))
 print('it,t,energy = %5d %12.6e %12.6e' % (it,t,energy))
-flog.write('%5d %12.6e %12.6e\n' % (it,t,energy))
+flog.write('%5d %12.6e %12.6e %12.6e\n' % (it,t,energy,control))
 
 # Now define BDF2 for remaining steps
 F2 = idt*(1.5*u - 2.0*u1 + 0.5*u0)*v*dx \
@@ -70,12 +72,13 @@ a, L = lhs(F2), rhs(F2)
 
 while t < Tf:
     if with_control:
-        uc.vector()[binds] = -np.dot(gain['Kt'], u1.vector().array())
+        uc.vector()[binds] = -np.dot(gain['K'], u1.vector().array())
     solve(a == L, u2, bc)
     energy = sqrt(assemble(u2**2*dx))
+    control = sqrt(assemble(uc**2*ds))
     t += dt; it += 1
     print('it,t,energy = %5d %12.6e %12.6e' % (it,t,energy))
-    flog.write('%5d %12.6e %12.6e\n' % (it,t,energy))
+    flog.write('%5d %12.6e %12.6e %12.6e\n' % (it,t,energy,control))
     u0.assign(u1)
     u1.assign(u2)
 

@@ -38,4 +38,4 @@ Mb= N[binds,:][:,binds] # boundary mass matrix
 N = N[:,:][:,binds]
 
 print 'Saving matrices into linear.mat'
-sio.savemat('linear.mat', mdict={'M':M, 'A':A, 'N':N, 'Mb':Mb}, oned_as='column')
+sio.savemat('linear.mat', mdict={'E11':M, 'A11':A, 'A12':N, 'Mb':Mb}, oned_as='column')
