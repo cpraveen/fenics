@@ -29,19 +29,15 @@ for cell in cells(mesh):
             ncell = Cell(mesh, neighbor[0])
             flag2[ncell] = True
 
-mesh1 = adapt(mesh, flag1)
-mesh2 = adapt(mesh, flag2)
+mesh_new = adapt(mesh, flag2)
 
 plt.figure()
 plot(mesh)
-
-plt.figure()
-plot(mesh1)
 plot(flag1)
 plt.title("Flagged cell 15")
 
 plt.figure()
-plot(mesh2)
+plot(mesh_new)
 plot(flag2)
 plt.title("Flagged cell 15 and its neighbors")
 
