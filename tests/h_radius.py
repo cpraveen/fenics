@@ -16,8 +16,10 @@ for cell in cells(mesh):
 V = FunctionSpace(mesh,'DG',0)
 H1 = Function(V)
 H1.vector().set_local(np.array(h1))
+H1.vector().apply('insert')
 H2 = Function(V)
 H2.vector().set_local(np.array(h2))
+H2.vector().apply('insert')
 
 File('H1.pvd') << H1
 File('H2.pvd') << H2
