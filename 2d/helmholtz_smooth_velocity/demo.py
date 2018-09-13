@@ -20,8 +20,10 @@ eps = 0.01
 # Velocity of isentropic vortex
 class Vortex(Expression):
     def eval(self, value, x):
-        value[0] =  x[1]
-        value[1] = -x[0]
+        beta = 5.0
+        r2 = x[0]**2 + x[1]**2
+        value[0] = -beta/(2*pi) * exp(0.5*(1.0-r2)) * x[1]
+        value[1] =  beta/(2*pi) * exp(0.5*(1.0-r2)) * x[0]
         return value
     def value_shape(self):
         return(2,)
@@ -45,11 +47,14 @@ a = eps*dot(grad(wx), grad(tx))*dx + eps*dot(grad(wy), grad(ty))*dx \
         + (wx*tx + wy*ty)*dx
 L = (w0[0]*tx + w0[1]*ty)*dx
 
+w = interpolate(w0, V)
+w.rename('w','w')
+File("init.pvd") << w
+
 # Solve PDE
-w = Function(V)
 problem = LinearVariationalProblem(a, L, w, bc)
 solver  = LinearVariationalSolver(problem)
 solver.solve()
 
 # Save solution to file
-File("w.pvd") << w
+File("smooth.pvd") << w
