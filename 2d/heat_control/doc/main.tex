@@ -1,0 +1,242 @@
+\documentclass[11pt, oneside]{article}   	% use "amsart" instead of "article" for AMSLaTeX format
+\usepackage{geometry}                		% See geometry.pdf to learn the layout options. There are lots.
+\geometry{letterpaper}                   		% ... or a4paper or a5paper or ... 
+%\geometry{landscape}                		% Activate for rotated page geometry
+%\usepackage[parfill]{parskip}    		% Activate to begin paragraphs with an empty line rather than an indent
+\usepackage{graphicx}				% Use pdf, png, jpg, or eps§ with pdflatex; use eps in DVI mode
+								% TeX will automatically convert eps --> pdf in pdflatex		
+\usepackage{amssymb}
+\usepackage{amsmath}
+\usepackage{bm}
+\usepackage{color}
+\usepackage{textcomp}
+\usepackage{listings}
+\usepackage{aliases}
+
+\newcommand{\x}{\mathsf{x}}
+\newcommand{\bOmega}{{\partial\Omega}}
+\newcommand{\bedge}{\mathcal{E}_b}
+\newcommand{\ind}{\mathcal{I}}
+\newcommand{\bind}{\ind_b}
+\newcommand{\find}{\ind_f}
+\newcommand{\nr}{{n_u}}
+
+\title{Dirichlet feedback control of 2-d heat equation}
+\author{Praveen Chandrashekar\\
+TIFR Centre for Applicable Mathematics\\
+Bangalore -- 560065}
+\date{}
+
+\begin{document}
+
+\lstset{
+   language=bash,
+   keywordstyle=\bfseries\ttfamily\color[rgb]{0,0,1},
+   identifierstyle=\ttfamily,
+   commentstyle=\color[rgb]{0.133,0.545,0.133},
+   stringstyle=\ttfamily\color[rgb]{0.627,0.126,0.941},
+   showstringspaces=false,
+   basicstyle=\small,
+   numberstyle=\footnotesize,
+   numbers=none,
+   stepnumber=1,
+   numbersep=10pt,
+   tabsize=2,
+   breaklines=true,
+   prebreak = \raisebox{0ex}[0ex][0ex]{\ensuremath{\hookleftarrow}},
+   breakatwhitespace=false,
+   aboveskip={0.1\baselineskip},
+    columns=fixed,
+    upquote=true,
+    extendedchars=true,
+% frame=single,
+    backgroundcolor=\color[rgb]{0.9,0.9,0.9}
+} 
+
+\maketitle
+%-------------------------------------------------------------------------------------------
+\section{Heat equation}
+The eigenfunctions of $\Delta$ on the unit square $\Omega=[0,1]\times[0,1]$ are of the form $\sin(n\pi x)\sin(m\pi y)$ and the corresponding eigenvectors are $-(n^2+m^2)\pi^2$ for $n,m=1,2,3,\ldots$. The first few eigenvalues are given by
+\[
+-2\pi^2, -5\pi^2, -5\pi^2, -8\pi^2, -10\pi^2, -10\pi^2, \ldots
+\]
+Choose an $s > 2 \pi^2$ and consider
+\begin{eqnarray*}
+\df{\theta}{t} &=& \Delta\theta + s \theta, \qquad \textrm{in } \Omega \\
+\theta(x,0) &=& 0, \qquad x \in \Omega \\
+\theta(x,t) &=& 0, \qquad x \in \bOmega
+\end{eqnarray*}
+This has a stationary solution which is just $\theta = 0$. To study the stability of this stationary solution to small perturbations, we perturb the initial condition and look at its evolution given by
+\begin{eqnarray*}
+\df{\theta}{t} &=& \Delta\theta + s \theta, \qquad \textrm{in } \Omega \\
+\theta(x,0) &=& \epsilon\theta_0(x), \qquad x \in \Omega \\
+\theta(x,t) &=& 0, \qquad x \in \bOmega
+\end{eqnarray*}
+where $\epsilon \ll 1$. The perturbations grow since (???)
+\[
+\dd{}{t} \int_\Omega |\theta|^2 \ud x = \int_\Omega ( -\norm{\nabla\theta}^2 + s |
+\theta|^2) \ud x > 0
+\]
+We can introduce a Dirichlet control to stabilize this and consider
+\begin{eqnarray*}
+\df{\theta}{t} &=& \Delta\theta + s \theta, \qquad \textrm{in } \Omega \\
+\theta(x,0) &=& \epsilon\theta_0(x), \qquad x \in \Omega \\
+\theta(x,t) &=& u(x,t), \qquad x \in \partial\Omega
+\end{eqnarray*}
+We want to compute $u$ in terms of $\theta$ by a feedback law.
+%-------------------------------------------------------------------------------------------
+\section{Weak formulation}
+Multiply by a test function $\phi \in \HoO$ and integrate by parts
+\[
+\int_\Omega \df{\theta}{t}\phi \ud x = \int_\Omega [-\nabla\theta \cdot \nabla\phi + s \theta \phi] \ud x + \int_\bOmega \df{\theta}{n} \phi \ud s
+\]
+Introduce the flux as a new unknown $\sigma = \df{\theta}{n}$ that we have to also determine as part of the solution and satisfy the boundary conditions in a weak manner. This leads to the problem: find $\theta \in \HoO$, $\sigma \in \LtbO$ such that
+\begin{eqnarray}
+\int_\Omega \df{\theta}{t}\phi \ud x &=& \int_\Omega [-\nabla\theta \cdot \nabla\phi + s \theta \phi] \ud x + \int_\bOmega \sigma \phi \ud s, \qquad \forall \phi \in \HoO \\
+\int_\bOmega \theta \psi \ud s &=& \int_\bOmega u \psi \ud s, \qquad \forall \psi \in \LtbO
+\end{eqnarray}
+
+%-------------------------------------------------------------------------------------------
+\section{Finite element method}
+Let $\mesh$ be a triangulation of $\Omega$ and we define the space of piecewise polynomials of degree $k$
+\[
+V_h = \{ \phi \in C^0(\Omega): \phi|_K \in \poly_k, \forall K \in \mesh \}
+\]
+Let $\bedge$ denote the boundary edges of $\mesh$. We also define the space of piecewise polynomials on the boundary
+\[
+W_h = \{ \phi \in C^0(\partial\Omega): \phi|_e \in \poly_k, \forall e \in \bedge \}
+\] 
+We will use nodal Lagrange basis functions for $V_h$ which we denote by $\{ \phi_j, 0 \le j \le N-1\}$. The restriction of these basis function to the boundary gives the basis functions for $W_h$. Define $\bind$ to be set of dofs supported on the boundary, $\find$ to be the other dofs and $\ind = \bind \cup \find = \{0,1,2,\ldots,N-1\}$. Then
+\[
+W_h = \textrm{span}\{ \phi_j|_{\partial\Omega}, j \in \bind \}
+\]
+With this notation, we can write the finite element solution as
+\[
+\theta_h = \sum_{j \in \ind} \theta_j \phi_j, \qquad \sigma_h = \sum_{j \in \bind} \sigma_j \phi_j
+\]
+We also approximate the boundary condition $u$ by $u_h$
+\[
+u_h = \sum_{j \in \bind} u_j \phi_j
+\]
+Substituting these into the weak formulation leads to the following set of equations
+\begin{eqnarray*}
+M \dd{\theta}{t} &=& A_1 \theta + N \sigma \\
+0 &=& N^\top \theta - M_b u
+\end{eqnarray*}
+where
+\[
+M = \ip{\phi_i, \phi_j}, \qquad A_1 = -\ip{\nabla\phi_i, \nabla\phi_j} + s\ip{\phi_i,\phi_j}, \qquad i,j \in \ind
+\]
+\[
+N = \ip{\phi_i, \phi_j}, \qquad i \in \ind, \quad j \in \bind
+\]
+\[
+M_b = \ip{\phi_i,\phi_j}, \qquad i,j \in \bind
+\]
+Note that $M_b$ is just the mass matrix of $W_h$. If we arrange the dofs such that the boundary dofs appear at the end, then $N$ has the form
+\[
+N = \begin{bmatrix}
+0 & 0 \\
+0 & M_b \end{bmatrix}
+\]
+We will now write this in state-space form. Define
+\[
+E = \begin{bmatrix}
+M & 0 \\
+0 & 0 \end{bmatrix}, \qquad A = \begin{bmatrix}
+A_1 & N \\
+N^\top & 0 \end{bmatrix}, \qquad B = \begin{bmatrix}
+0 \\
+-M_b \end{bmatrix}
+\]
+so that
+\[
+E \dd{x}{t} = Ax + Bu, \qquad x = \begin{bmatrix} \theta \\ \sigma \end{bmatrix}
+\]
+If we add a shift $s > 2 \pi^2$, then this system is unstable to small perturbations since $(A,E)$ has some eigenvalues on the right side of the complex plane. The goal is to find a feedback law
+\[
+u = -K x
+\]
+such that $(A-BK, E)$ is stable.
+%-------------------------------------------------------------------------------------------
+\section{Computation of feedback law}
+For this we follow the steps as in Thevenet. The Fenics code \texttt{linear.py} computes the matrices $M,A_1,N,M_b$ and saves them to file \texttt{linear.mat} which can then read by the Matlab code \texttt{gain.m} to compute eigenvalues and the feedback operator. Finally we run the Fenics code \texttt{heat.py} to solve the heat equation with or without control.
+
+Suppose there are $\nr$ unstable eigenvalues and let the eigenvalues be ordered as
+\[
+\ldots < \lambda_{\nr+2} < \lambda_{\nr+1} < 0 < \lambda_\nr < \ldots \lambda_1
+\]
+Compute the eigenvectors corresponding to the unstable eigenvalues
+\[
+A e_j = \lambda_j E e_j, \qquad j=1,2,\ldots,\nr
+\]
+%-------------------------------------------------------------------------------------------
+\section{Solving the feedback stabilized problem}
+Using the feedback law, we get
+\[
+E\dd{x}{t} = (A-BK)x
+\]
+We can apply backward Euler scheme
+\[
+E \frac{x^n - x^{n-1}}{\Delta t} = (A-BK)x^n
+\]
+While $E,A,B$ are sparse matrices, $K$ can be full which makes it difficult to solve this problem. To avoid this complication, we can compute the feedback using the current solution, i.e., $u^n = -K x^{n-1}$, which leads to
+\[
+E \frac{x^n - x^{n-1}}{\Delta t} = A x^n + B u^n
+\]
+or
+\[
+\left[ \frac{1}{\Delta t}E - A \right] x^n = \frac{1}{\Delta t}E x^{n-1} + Bu^n
+\]
+The matrix on the left is sparse so that the above equation can be solved explicitly. A more accurate estimate of the control can be obtained by extrapolation of previous two solutions
+\[
+u^n  = -K (2x^{n-1} - x^{n-2})
+\]
+and use BDF2 scheme which is second order accurate in time
+\[
+E \frac{\frac{3}{2}x^n - 2x^{n-1} + \half x^{n-2}}{\Delta t} = A x^n + B u^n
+\]
+
+In this procedure, we are simultaneously solving for $\theta, \sigma$. We can avoid computation of $\sigma$ as follows. We first compute the solution on the boundary
+\[
+\theta_j^n = u_j^n, \qquad j \in \bind
+\]
+To determine the interior solution, we have to use test functions which vanish on the boundary. If we use the backward Euler scheme, then we have
+\[
+\left[ \frac{1}{\Delta t}M - A_1 \right] \theta^n = \frac{1}{\Delta t}M \theta^{n-1} =: r^n
+\]
+The matrix and right hand side vector are modified to satisfy the boundary condition. We can preserve the symmetry of the matrix which allows the use of conjugate gradients method to solve the matrix problem. If necessary, we can compute $\sigma$ by a post-processing step by taking test functions supported on $\bOmega$.
+%-------------------------------------------------------------------------------------------
+\section{Steps to run the code}
+
+You can set some parameters in the \texttt{param.py} file. Now generate the grid
+\begin{lstlisting}
+$ python grid.py
+\end{lstlisting}
+We first solve the heat equation without control
+\begin{lstlisting}
+$ python heat.py -time 1.0 -dt 0.01
+\end{lstlisting}
+Plot the energy as a function of time
+\begin{lstlisting}
+$ python plot.py
+\end{lstlisting}
+You can see the plot in \texttt{energy.pdf} file. The energy should be increasing with time. Next, we will solve the problem with feedback control. First we generate state-space matrices, by running the Python code on terminal
+\begin{lstlisting}
+$ python linear.py
+\end{lstlisting}
+This saves the state-space matrices into file \texttt{linear.mat} which can be read in Matlab. Now in Matlab, run
+\begin{lstlisting}
+> linear
+\end{lstlisting}
+On terminal, run the Fenics code
+\begin{lstlisting}
+$ python heat.py -with_control -time 10.0 -dt 0.01
+\end{lstlisting}
+Plot the energy as a function of time
+\begin{lstlisting}
+$ python plot.py
+\end{lstlisting}
+You can see the plot in \texttt{energy.pdf} file which should now decrease with time.
+
+\end{document}  
