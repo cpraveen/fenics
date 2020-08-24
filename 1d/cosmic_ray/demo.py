@@ -13,8 +13,8 @@ ep = Constant(h)
 dt = h
 idt= Constant(1.0/dt)
 
-print "h  = ", h
-print "dt = ", dt
+print("h  = ", h)
+print("dt = ", dt)
 
 # Sub domain for Dirichlet boundary condition
 class PeriodicBoundary(SubDomain):
@@ -61,8 +61,8 @@ prm['snes_solver']['maximum_iterations'] = 200
 
 # Set initial condition
 u.interpolate(u0)
-uinit = u.vector().array()
-x = V.tabulate_dof_coordinates()
+uinit = u.vector().get_local()
+x = V.tabulate_dof_coordinates()[:,0]
 i = np.argsort(x)
 plt.plot(x[i],uinit[i])
 plt.xlabel('x')
@@ -74,9 +74,9 @@ while t < T:
     solver.solve()
     it += 1; t += dt
 
-print "it, t =", it, t
+print("it, t =", it, t)
 
 # Plot final solution
-unew = u.vector().array()
+unew = u.vector().get_local()
 plt.plot(x[i],unew[i]);
 plt.savefig("sol.pdf")
